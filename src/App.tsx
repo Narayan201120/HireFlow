@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { jobs, starterApplications } from './data'
+import type { Application, ApplicationStatus, Job } from './types'
 
 const icons = {
-  search: '⌕', bookmark: '♡', briefcase: '▣', home: '⌂', menu: '☰', arrow: '→', close: '×', check: '✓'
+  search: '⌕', bookmark: '🔖', briefcase: '▣', home: '⌂', menu: '☰', arrow: '→', close: '×', check: '✓'
 }
 
 function App() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
-  const [saved, setSaved] = useState(() => JSON.parse(localStorage.getItem('hireflow-saved') || '[]'))
-  const [applications, setApplications] = useState(() => JSON.parse(localStorage.getItem('hireflow-applications') || JSON.stringify(starterApplications)))
+  const [saved, setSaved] = useState<number[]>(() => JSON.parse(localStorage.getItem('hireflow-saved') || '[]'))
+  const [applications, setApplications] = useState<Application[]>(() => JSON.parse(localStorage.getItem('hireflow-applications') || JSON.stringify(starterApplications)))
   const [activeTab, setActiveTab] = useState('discover')
-  const [selectedJob, setSelectedJob] = useState(null)
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [toast, setToast] = useState('')
 
   useEffect(() => localStorage.setItem('hireflow-saved', JSON.stringify(saved)), [saved])
@@ -27,11 +28,11 @@ function App() {
     return haystack.includes(query.toLowerCase()) && (!location || job.location.toLowerCase().includes(location.toLowerCase()))
   }), [query, location])
 
-  const toggleSaved = (id) => {
+  const toggleSaved = (id: number) => {
     setSaved(current => current.includes(id) ? current.filter(jobId => jobId !== id) : [...current, id])
   }
 
-  const apply = (job) => {
+  const apply = (job: Job) => {
     if (!applications.some(item => item.company === job.company && item.role === job.title)) {
       setApplications(current => [{ id: Date.now(), company: job.company, role: job.title, status: 'Applied', date: 'Just now' }, ...current])
     }
@@ -40,7 +41,7 @@ function App() {
     setToast(`Application added for ${job.title}`)
   }
 
-  const changeStatus = (id, status) => setApplications(current => current.map(item => item.id === id ? { ...item, status } : item))
+  const changeStatus = (id: number, status: ApplicationStatus) => setApplications(current => current.map(item => item.id === id ? { ...item, status } : item))
   const jobsToShow = activeTab === 'saved' ? filteredJobs.filter(job => saved.includes(job.id)) : filteredJobs
 
   return <div className="app-shell">
@@ -76,7 +77,9 @@ function App() {
   </div>
 }
 
-function JobCard({ job, saved, onSave, onOpen }) {
+type JobCardProps = { job: Job; saved: boolean; onSave: () => void; onOpen: () => void }
+
+function JobCard({ job, saved, onSave, onOpen }: JobCardProps) {
   return <article className="job-card">
     <div className="card-top"><div className="company-logo" style={{ backgroundColor: job.color }}>{job.initials}</div><button className={saved ? 'save saved' : 'save'} onClick={onSave} aria-label="Save job">{saved ? '♥' : icons.bookmark}</button></div>
     <button className="job-main" onClick={onOpen}><p className="company-name">{job.company}</p><h3>{job.title}</h3><p className="job-meta">{job.location} <span>·</span> {job.type}</p><div className="tags">{job.tags.map(tag => <span key={tag}>{tag}</span>)}</div></button>
@@ -84,12 +87,16 @@ function JobCard({ job, saved, onSave, onOpen }) {
   </article>
 }
 
-function Applications({ applications, onStatusChange, onDiscover }) {
-  const labels = ['Saved', 'Applied', 'Interview', 'Offer']
-  return <main className="applications"><section className="applications-hero"><p className="eyebrow">STAY ORGANISED</p><h1>Your application<br /><em>momentum.</em></h1><p>Keep every opportunity moving without losing track of the details.</p></section><section className="content-section"><div className="section-heading"><div><p className="eyebrow">APPLICATION TRACKER</p><h2>Where you stand</h2></div><button className="outline-button" onClick={onDiscover}>Browse jobs {icons.arrow}</button></div><div className="kanban">{labels.map(label => <div className="kanban-column" key={label}><div className="column-title"><h3>{label}</h3><span>{applications.filter(item => item.status === label).length}</span></div>{applications.filter(item => item.status === label).map(item => <div className="application-card" key={item.id}><p>{item.company}</p><h4>{item.role}</h4><small>{item.date}</small><select value={item.status} onChange={e => onStatusChange(item.id, e.target.value)} aria-label={`Status for ${item.role}`}>{labels.map(option => <option key={option}>{option}</option>)}</select></div>)}</div>)}</div></section></main>
+type ApplicationsProps = { applications: Application[]; onStatusChange: (id: number, status: ApplicationStatus) => void; onDiscover: () => void }
+
+function Applications({ applications, onStatusChange, onDiscover }: ApplicationsProps) {
+  const labels: ApplicationStatus[] = ['Saved', 'Applied', 'Interview', 'Offer']
+  return <main className="applications"><section className="applications-hero"><p className="eyebrow">STAY ORGANISED</p><h1>Your application<br /><em>momentum.</em></h1><p>Keep every opportunity moving without losing track of the details.</p></section><section className="content-section"><div className="section-heading"><div><p className="eyebrow">APPLICATION TRACKER</p><h2>Where you stand</h2></div><button className="outline-button" onClick={onDiscover}>Browse jobs {icons.arrow}</button></div><div className="kanban">{labels.map(label => <div className="kanban-column" key={label}><div className="column-title"><h3>{label}</h3><span>{applications.filter(item => item.status === label).length}</span></div>{applications.filter(item => item.status === label).map(item => <div className="application-card" key={item.id}><p>{item.company}</p><h4>{item.role}</h4><small>{item.date}</small><select value={item.status} onChange={e => onStatusChange(item.id, e.target.value as ApplicationStatus)} aria-label={`Status for ${item.role}`}>{labels.map(option => <option key={option}>{option}</option>)}</select></div>)}</div>)}</div></section></main>
 }
 
-function JobModal({ job, saved, onSave, onApply, onClose }) {
+type JobModalProps = { job: Job; saved: boolean; onSave: () => void; onApply: (job: Job) => void; onClose: () => void }
+
+function JobModal({ job, saved, onSave, onApply, onClose }: JobModalProps) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="job-title" onMouseDown={e => e.stopPropagation()}><button className="close" onClick={onClose} aria-label="Close">{icons.close}</button><div className="modal-logo" style={{ backgroundColor: job.color }}>{job.initials}</div><p className="company-name">{job.company}</p><h2 id="job-title">{job.title}</h2><p className="job-meta">{job.location} <span>·</span> {job.type} <span>·</span> {job.salary}</p><div className="tags">{job.tags.map(tag => <span key={tag}>{tag}</span>)}</div><hr /><h3>About the role</h3><p className="description">Join a thoughtful, ambitious team and help shape a product people genuinely enjoy using. You’ll own meaningful work, collaborate closely, and have room to grow.</p><div className="modal-actions"><button className={saved ? 'secondary saved' : 'secondary'} onClick={onSave}>{saved ? '♥ Saved' : '♡ Save role'}</button><button className="primary" onClick={() => onApply(job)}>Add application {icons.arrow}</button></div></section></div>
 }
 
