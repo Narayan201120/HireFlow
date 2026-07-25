@@ -54,7 +54,9 @@ Two workflows are intentionally separated:
    - `VERCEL_TOKEN` — a Vercel personal access token;
    - `VERCEL_ORG_ID` — Vercel team/user ID;
    - `VERCEL_PROJECT_ID` — the project ID.
-3. Push to `main`. GitHub Actions deploys to production after checkout.
+3. Push to `main`. Vercel's connected Git integration deploys to production immediately. Once the three secrets are present, the explicit GitHub Actions deployment job also validates and deploys the production build.
+
+Until those secrets are configured, the deployment job is intentionally skipped rather than failing. This keeps the CI signal green while Vercel's native Git deployment remains active.
 
 Vercel also supports its native Git integration. It should be disabled for this project if the GitHub Action is the desired single deployment path, avoiding duplicate deployments.
 

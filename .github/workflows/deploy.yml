@@ -11,6 +11,9 @@ jobs:
   deploy:
     name: Deploy production site
     runs-on: ubuntu-latest
+    # Vercel's Git integration deploys immediately. This explicit workflow
+    # activates once the three VERCEL_* repository secrets are configured.
+    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
     needs: []
     steps:
       - uses: actions/checkout@v4
