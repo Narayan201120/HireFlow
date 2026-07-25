@@ -1,4 +1,4 @@
-import { jobs } from '../src/data'
+import { jobs } from '../src/data.js'
 
 type QueryValue = string | string[] | undefined
 

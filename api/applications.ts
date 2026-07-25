@@ -1,5 +1,5 @@
-import { starterApplications } from '../src/data'
-import type { Application, ApplicationStatus } from '../src/types'
+import { starterApplications } from '../src/data.js'
+import type { Application, ApplicationStatus } from '../src/types.js'
 
 type ApiRequest = {
   method?: string
