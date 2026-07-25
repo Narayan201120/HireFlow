@@ -67,6 +67,7 @@ The UI is componentized around `JobCard`, `JobModal`, and `Applications`. Seed d
 
 Backend routes:
 
+- `GET /api/health` returns the API health status.
 - `GET /api/jobs` returns curated roles and supports `q` and `location` query filters.
 - `GET /api/applications` returns starter application data.
 - `POST /api/applications` validates and accepts a new application payload.
