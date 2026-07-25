@@ -10,11 +10,12 @@ Job searching tends to fragment across many tabs, boards, and notes. HireFlow br
 - save promising opportunities for later;
 - add a role to an application board and update its status.
 
-The project deliberately uses local browser storage for saves and applications: it makes the prototype immediately usable without requiring an account or backend, while keeping a clear seam for a future API.
+The project uses a small TypeScript Vercel API for job and application endpoints, plus local browser storage for user-specific saves and board changes. This keeps the prototype immediately usable without account setup while still demonstrating a backend integration path.
 
 ## Stack
 
 - React 19 + Vite
+- TypeScript Vercel serverless functions
 - Plain CSS for a lightweight, responsive interface
 - Browser `localStorage` for prototype persistence
 - ESLint for static checks
@@ -51,7 +52,7 @@ Two workflows are intentionally separated:
 
 1. Create a Vercel project by importing this GitHub repository (or run `vercel link` locally).
 2. In the GitHub repository’s **Settings → Secrets and variables → Actions**, add:
-   - `VERCEL_TOKEN` — a Vercel personal access token;
+   - `HIREFLOW_VERCEL_TOKEN` — a Vercel personal access token;
    - `VERCEL_ORG_ID` — Vercel team/user ID;
    - `VERCEL_PROJECT_ID` — the project ID.
 3. Push to `main`. Vercel's connected Git integration deploys to production immediately. Once the three secrets are present, the explicit GitHub Actions deployment job also validates and deploys the production build.
@@ -62,7 +63,13 @@ Vercel also supports its native Git integration. It should be disabled for this 
 
 ## Architecture notes
 
-The UI is componentized around `JobCard`, `JobModal`, and `Applications`. Seed data is isolated in `src/data.js`; replacing it with an API client would not require reworking the screen components. Application and save actions are persisted independently, allowing the two features to evolve separately.
+The UI is componentized around `JobCard`, `JobModal`, and `Applications`. Seed data is isolated in `src/data.ts` and exposed through Vercel API routes in `api/jobs.ts` and `api/applications.ts`. Application and save actions are persisted independently, allowing the two features to evolve separately.
+
+Backend routes:
+
+- `GET /api/jobs` returns curated roles and supports `q` and `location` query filters.
+- `GET /api/applications` returns starter application data.
+- `POST /api/applications` validates and accepts a new application payload.
 
 ## Future improvements
 

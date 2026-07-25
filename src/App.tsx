@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { jobs, starterApplications } from './data'
+import { jobs as fallbackJobs, starterApplications } from './data'
 import type { Application, ApplicationStatus, Job } from './types'
 
 const icons = {
@@ -7,6 +7,7 @@ const icons = {
 }
 
 function App() {
+  const [jobCatalog, setJobCatalog] = useState<Job[]>(fallbackJobs)
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [saved, setSaved] = useState<number[]>(() => JSON.parse(localStorage.getItem('hireflow-saved') || '[]'))
@@ -18,15 +19,35 @@ function App() {
   useEffect(() => localStorage.setItem('hireflow-saved', JSON.stringify(saved)), [saved])
   useEffect(() => localStorage.setItem('hireflow-applications', JSON.stringify(applications)), [applications])
   useEffect(() => {
+    let isMounted = true
+
+    fetch('/api/jobs')
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load jobs')))
+      .then((payload: { data?: Job[] }) => {
+        if (isMounted && payload.data?.length) {
+          setJobCatalog(payload.data)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setJobCatalog(fallbackJobs)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+  useEffect(() => {
     if (!toast) return undefined
     const timer = setTimeout(() => setToast(''), 2600)
     return () => clearTimeout(timer)
   }, [toast])
 
-  const filteredJobs = useMemo(() => jobs.filter(job => {
+  const filteredJobs = useMemo(() => jobCatalog.filter(job => {
     const haystack = `${job.title} ${job.company} ${job.location} ${job.tags.join(' ')}`.toLowerCase()
     return haystack.includes(query.toLowerCase()) && (!location || job.location.toLowerCase().includes(location.toLowerCase()))
-  }), [query, location])
+  }), [jobCatalog, query, location])
 
   const toggleSaved = (id: number) => {
     setSaved(current => current.includes(id) ? current.filter(jobId => jobId !== id) : [...current, id])
@@ -35,6 +56,11 @@ function App() {
   const apply = (job: Job) => {
     if (!applications.some(item => item.company === job.company && item.role === job.title)) {
       setApplications(current => [{ id: Date.now(), company: job.company, role: job.title, status: 'Applied', date: 'Just now' }, ...current])
+      void fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: job.company, role: job.title, status: 'Applied' })
+      }).catch(() => undefined)
     }
     setSelectedJob(null)
     setActiveTab('applications')
